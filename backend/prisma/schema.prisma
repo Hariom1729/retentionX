@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id               String   @id @default(uuid())
+  name             String
+  branding         Json?    // Module 24 (White Labeling): e.g., colors, logo
+  customDomain     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  users            User[]
+  events           Event[]
+  customerProfiles CustomerProfile[]
+  campaigns        Campaign[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String   @unique
+  role           String   // e.g., ADMIN, USER
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  auditLogs      AuditLog[]
+}
+
+model Event {
+  id             Int      @id @default(autoincrement())
+  organizationId String
+  customerId     String
+  eventType      String   // signup, purchase, login
+  timestamp      DateTime @default(now())
+  metadata       Json?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model CustomerProfile {
+  id                   String   @id @default(uuid())
+  organizationId       String
+  customerId           String
+  healthScore          Float    @default(100.0)
+  communicationHistory Json?
+  timeline             Json?
+  organization         Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, customerId])
+}
+
+model Campaign {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  status         String   // DRAFT, SCHEDULED, ACTIVE, COMPLETED
+  content        String?
+  targetSegments Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String?
+  action         String
+  resource       String
+  resourceId     String?
+  details        Json?
+  timestamp      DateTime @default(now())
+  
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User?        @relation(fields: [userId], references: [id])
+}
